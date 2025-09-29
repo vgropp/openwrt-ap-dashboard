@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+th:first-child, td:first-child {
+  border-left: none;
+}

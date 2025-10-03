@@ -45,23 +45,39 @@ type JSONRPCResponse struct {
 	Result  []interface{} `json:"result"` // first element int, second element map
 }
 
-func ubusCallHost(st StationConfig, token string, object, method string, params interface{}) (map[string]interface{}, error) {
+func ubusCallHost(st StationConfig, token string, object, method string, params interface{}) (float64, error) {
+	rpcResp, err := ubusBaseCall(st, token, object, method, params)
+	if err != nil {
+		return 0, err
+	}
+	return rpcResp.Result[0].(float64), nil
+}
+
+func ubusBaseCall(st StationConfig, token string, object string, method string, params interface{}) (JSONRPCResponse, error) {
 	url := fmt.Sprintf("http://%s:%d/ubus", st.Host, st.Port)
 	call := ubusCall{Jsonrpc: "2.0", ID: 1, Method: "call", Params: []interface{}{token, object, method, params}}
 	b, _ := json.Marshal(call)
 	client := &http.Client{Timeout: 8 * time.Second}
 	resp, err := client.Post(url, "application/json", bytes.NewReader(b))
 	if err != nil {
-		return nil, err
+		return JSONRPCResponse{}, err
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	var parsed interface{}
 	if err := json.Unmarshal(body, &parsed); err != nil {
-		return nil, err
+		return JSONRPCResponse{}, err
 	}
 	var rpcResp JSONRPCResponse
 	if err := json.Unmarshal([]byte(body), &rpcResp); err != nil {
+		return JSONRPCResponse{}, err
+	}
+	return rpcResp, nil
+}
+
+func ubusCallHostDevices(st StationConfig, token string, object, method string, params interface{}) (map[string]interface{}, error) {
+	rpcResp, err := ubusBaseCall(st, token, object, method, params)
+	if err != nil {
 		return nil, err
 	}
 	if len(rpcResp.Result) != 2 {

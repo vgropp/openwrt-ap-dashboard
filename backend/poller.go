@@ -69,6 +69,8 @@ var (
 )
 
 func startPollers(cfg *Config) {
+	resolver := NewResolver(1 * time.Hour)
+
 	for _, s := range cfg.Stations {
 		st := s
 		// populate stationMap
@@ -76,7 +78,7 @@ func startPollers(cfg *Config) {
 		go func() {
 			interval := time.Duration(cfg.PollInterval) * time.Second
 			for {
-				if err := pollStation(st); err != nil {
+				if err := pollStation(st, resolver); err != nil {
 					log.Printf("poll %s error: %v", st.ID, err)
 				}
 				notifyClientsUpdate()
@@ -97,7 +99,7 @@ func DeviceToString(mac string, d KnownDevice) string {
 	return fmt.Sprintf("%s [%s] %s", ip, mac, d.Name)
 }
 
-func pollStation(st StationConfig) error {
+func pollStation(st StationConfig, resolver *Resolver) error {
 	client := &UbosClient{
 		Host:     st.Host,
 		Username: st.Username,
@@ -109,25 +111,37 @@ func pollStation(st StationConfig) error {
 	}
 	// HostHints für MAC→IP Mapping
 	devices := make(map[string]KnownDevice)
-	if devicesMap, err := ubusCallHost(st, token, "luci-rpc", "getHostHints", map[string]interface{}{}); err == nil {
+	if devicesMap, err := ubusCallHostDevices(st, token, "luci-rpc", "getHostHints", map[string]interface{}{}); err == nil {
 		for mac, v := range devicesMap {
 			deviceBytes, _ := json.Marshal(v)
 			var d KnownDevice
 			if err := json.Unmarshal(deviceBytes, &d); err != nil {
 				panic(err)
 			}
+			if d.Name == "" {
+				for _, ip := range d.IPAddrs {
+					host, err := resolver.LookupAddr(ip)
+					if (err == nil) && (host != ip) {
+						d.Name = ip
+						break
+					}
+				}
+			}
+			if len(d.IPAddrs) == 0 && d.Name != "" {
+				d.IPAddrs, _ = resolver.LookupHost(d.Name)
+			}
 			devices[mac] = d
 		}
 	}
 	for _, iface := range st.Ifaces {
-		parsed, err := ubusCallHost(st, token, "iwinfo", "assoclist", map[string]string{"device": iface})
+		parsed, err := ubusCallHostDevices(st, token, "iwinfo", "assoclist", map[string]string{"device": iface})
 		if err != nil {
 			// retry mit neuem Login
 			token, _, err = client.ubusLogin()
 			if err != nil {
 				continue
 			}
-			parsed, err = ubusCallHost(st, token, "iwinfo", "assoclist", map[string]string{"device": iface})
+			parsed, err = ubusCallHostDevices(st, token, "iwinfo", "assoclist", map[string]string{"device": iface})
 			if err != nil {
 				continue
 			}
@@ -135,7 +149,6 @@ func pollStation(st StationConfig) error {
 		var resultsWrapper struct {
 			Results []Client `json:"results"`
 		}
-		fmt.Println(parsed)
 		parsedBytes, _ := json.Marshal(parsed)
 		err = json.Unmarshal(parsedBytes, &resultsWrapper)
 		if err != nil {

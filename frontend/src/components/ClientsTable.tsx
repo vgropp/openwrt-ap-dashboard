@@ -114,15 +114,23 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
                   <span>
                     {c.device_info.name}
                     {(() => {
-                      const ip4 = c.device_info.ipaddrs[0];
-                      const ip6 = c.device_info.ip6addrs[0];
+                      let ip4 = null;
+                      let ip6 = null;
+                      if (c.device_info.ipaddrs != null) {
+                        ip4 = c.device_info.ipaddrs[0];
+                      }
+
+                      if (c.device_info.ip6addrs != null) {
+                        ip6 = c.device_info.ip6addrs[0];
+                      }
                       if (ip4 || ip6) {
                         return ` (${[ip4, ip6].filter(Boolean).join(", ")})`;
                       }
                       return "";
                     })()}
                   </span>
-                  {(c.device_info.ipaddrs.length > 0 || c.device_info.ip6addrs.length > 0) && (
+                  {((c.device_info.ipaddrs != null && c.device_info.ipaddrs.length > 0) 
+                    || (c.device_info.ip6addrs != null && c.device_info.ip6addrs.length > 0)) && (
                     <div className="absolute z-10 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 mt-1 left-1/2 -translate-x-1/2 whitespace-pre shadow-lg">
                       {[...c.device_info.ipaddrs, ...c.device_info.ip6addrs].join("\n")}
                     </div>

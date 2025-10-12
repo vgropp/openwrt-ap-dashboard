@@ -1,0 +1,13 @@
+services:
+  openwrt-dash:
+    build: .
+    container_name: openwrt-dash
+    environment:
+      - BACKEND_PORT=8189
+    dns:
+      - <optional-dns-for-reverse-lookup>
+    ports:
+      - "8189:8189"
+    volumes:
+      - ./stations.yaml:/stations.yaml:ro
+    restart: unless-stopped

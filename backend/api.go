@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -139,6 +140,17 @@ func startHTTP(addr string) {
 	r.HandleFunc("/api/clients", listClientsHandler).Methods("GET")
 	r.HandleFunc("/api/clients/{mac}/disconnect", disconnectHandler).Methods("POST")
 	r.HandleFunc("/ws/clients", wsHandler)
+
+	fs := http.FileServer(http.Dir("../frontend/dist"))
+
+	r.PathPrefix("/").Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		path := "../frontend/dist" + req.URL.Path
+		if _, err := os.Stat(path); err == nil {
+			fs.ServeHTTP(w, req)
+			return
+		}
+		http.ServeFile(w, req, "../frontend/dist/index.html")
+	}))
 
 	log.Printf("backend: listening on %s", addr)
 	if err := http.ListenAndServe(addr, r); err != nil {

@@ -158,6 +158,12 @@ func pollStation(st StationConfig, resolver *Resolver) error {
 		for _, c := range resultsWrapper.Results {
 			c.LastSeen = time.Now()
 			c.DeviceInfo = devices[c.Mac]
+			if c.DeviceInfo.IPAddrs == nil {
+				c.DeviceInfo.IPAddrs = []string{}
+			}
+			if c.DeviceInfo.IP6Addrs == nil {
+				c.DeviceInfo.IP6Addrs = []string{}
+			}
 			c.StationID = st.ID
 			c.Iface = iface
 			c.Name = st.Name

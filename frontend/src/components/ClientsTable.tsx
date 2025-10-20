@@ -9,15 +9,38 @@ interface Props {
 
 type SortKey = keyof Client | null;
 
+function formatLastSeen(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
+
+  const date = d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const time = d.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return `${date} ${time} (${hours}h ${minutes}m ago)`;
+}
+
 export default function ClientsTable({ clients, onRefresh }: Props) {
   const handleDisconnect = async (mac: string) => {
     await disconnectClient(mac);
     onRefresh();
   };
+  const [hideOld, setHideOld] = useState(true);
   const [filter, setFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const filteredClients = clients.filter((c) => {
+  let filteredClients = clients.filter((c) => {
     const search = filter.toLowerCase();
     return (
       c.mac.toLowerCase().includes(search) ||
@@ -29,6 +52,16 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
       c.name.toLowerCase().includes(search) 
     );
   });
+
+  const now = Date.now();
+  const allClientsCount = filteredClients.length;
+  filteredClients = filteredClients.filter(c => {
+    if (!hideOld) return true;
+    const lastSeen = new Date(c.last_seen).getTime();
+    const diffMinutes = (now - lastSeen) / 60000;
+    return !hideOld || diffMinutes <= 60;
+  });
+  const oldCLientsCount = allClientsCount - filteredClients.length;
 
   const sortedClients = [...filteredClients].sort((a, b) => {
     if (!sortKey) return 0;
@@ -64,15 +97,28 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">
           Showing <span className="font-semibold">{filteredClients.length}</span>{" "}
-          of <span className="font-semibold">{clients.length}</span> clients
+          of <span className="font-semibold">{clients.length - oldCLientsCount} {oldCLientsCount > 0 && (<> ({oldCLientsCount} old)</>
+    )}</span> clients
         </p>
-        <input
-          type="text"
-          placeholder="Filter clients..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
+         <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={hideOld}
+              placeholder="hide old clients..."
+              onChange={(e) => setHideOld(e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-400"
+            />
+            Hide &gt; 1 hr inactive
+          </label>        
+          <input
+            type="text"
+            placeholder="Filter clients..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="px-3 py-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -97,6 +143,7 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
               <th className="px-4 py-2 text-left cursor-pointer whitespace-nowrap" onClick={() => handleSort("thr")}>
                 Throughput <SortIndicator column="thr" />
               </th>
+              <th className="px-4 py-2 text-left whitespace-nowrap">last seen</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -151,9 +198,11 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
                     </span>
                     <span>
                       {formatRate(c.tx.rate)} Mbit/s, {c.tx.mhz} MHz
+                      
                     </span>
                   </div>
                 </td>
+                <td className="px-4 py-2 text-left whitespace-nowrap">{formatLastSeen(c.last_seen)}</td>
                 <td className="px-4 py-2 text-right">
                   <button
                     onClick={() => handleDisconnect(c.mac)}

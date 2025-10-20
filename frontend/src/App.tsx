@@ -4,7 +4,6 @@ import type { Client } from "./types";
 import ClientsTable from "./components/ClientsTable";
 
 function App() {
-  // const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

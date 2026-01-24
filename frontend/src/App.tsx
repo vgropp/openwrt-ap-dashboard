@@ -38,8 +38,12 @@ const [clients, setClients] = useState<Map<string, Client>>(new Map());
         clearTimeout(t);
         return changed ? next : prev;
       });
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError(String(e));
+      }
     } finally {
       setLoading(false);
     }

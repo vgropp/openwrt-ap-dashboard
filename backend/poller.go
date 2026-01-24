@@ -110,7 +110,7 @@ func pollStation(st StationConfig, resolver *Resolver) error {
 	if err != nil {
 		return err
 	}
-	// HostHints für MAC→IP Mapping
+	// HostHints for MAC→IP Mapping
 	devices := make(map[string]KnownDevice)
 	arp, err := resolver.GetARP(st, token)
 	if err != nil {

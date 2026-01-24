@@ -185,10 +185,23 @@ The backend pushes client updates via WebSocket at `/ws`. Frontend automatically
 
 ## Docker Network Mode
 
-**Important**: The container uses `network_mode: host` to access the local ARP table as a fallback for IP resolution. This means:
+**Important**: The container uses `network_mode: host` for two critical features:
+
+1. **Local ARP Fallback**: Direct access to `/proc/net/arp` on the host for IP resolution when remote ARP fails
+2. **mDNS Discovery**: Multicast traffic (224.0.0.251:5353) for discovering devices like ESPHome, Shelly, Matter, etc.
+
+Docker bridge networks don't forward multicast traffic and can't mount `/proc` filesystems, so `network_mode: host` is required.
+
+**Implications:**
 - Container shares the host's network interface
 - Can access `/proc/net/arp` directly
-- Ports are not isolated (use firewall rules)
+- Can receive mDNS multicast packets
+- Ports are not isolated (use firewall rules if needed)
+
+**Without host mode:**
+- ❌ mDNS Discovery will not work
+- ❌ Local ARP fallback will not work
+- ✅ Remote ARP from routers still works (if properly configured)
 
 If you need to change this, update `docker-compose.yml`.
 

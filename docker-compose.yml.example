@@ -10,4 +10,5 @@ services:
       - "8189:8189"
     volumes:
       - ./stations.yaml:/stations.yaml:ro
+    network_mode: host
     restart: unless-stopped

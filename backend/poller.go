@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -100,7 +101,7 @@ func DeviceToString(mac string, d KnownDevice) string {
 }
 
 func pollStation(st StationConfig, resolver *Resolver) error {
-	client := &UbosClient{
+	client := &UbusClient{
 		Host:     st.Host,
 		Username: st.Username,
 		Password: st.Password,
@@ -111,6 +112,10 @@ func pollStation(st StationConfig, resolver *Resolver) error {
 	}
 	// HostHints für MAC→IP Mapping
 	devices := make(map[string]KnownDevice)
+	arp, err := resolver.GetARP(st, token)
+	if err != nil {
+		log.Printf("getARP error: %v", err)
+	}
 	if devicesMap, err := ubusCallHostDevices(st, token, "luci-rpc", "getHostHints", map[string]interface{}{}); err == nil {
 		for mac, v := range devicesMap {
 			deviceBytes, _ := json.Marshal(v)
@@ -129,6 +134,12 @@ func pollStation(st StationConfig, resolver *Resolver) error {
 			}
 			if len(d.IPAddrs) == 0 && d.Name != "" {
 				d.IPAddrs, _ = resolver.LookupHost(d.Name)
+			}
+			// Fallback to ARP if no IPs in openwrt or no name to resolve
+			if len(d.IPAddrs) == 0 {
+				if ip, ok := arp[strings.ToLower(mac)]; ok {
+					d.IPAddrs = []string{ip}
+				}
 			}
 			devices[mac] = d
 		}
@@ -177,4 +188,47 @@ func notifyClientsUpdate() {
 	clients := store.List()
 	b, _ := json.Marshal(map[string]interface{}{"clients": clients})
 	broadcastWebsocket(b)
+}
+
+func StartPoller(ctx context.Context, interval time.Duration, st StationConfig, ub *UbusClient) error {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	backoffBase := time.Second
+	backoffMax := 30 * time.Second
+	var backoff time.Duration
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			token, err := ub.ubusLoginCachedContext(ctx)
+			if err != nil {
+				log.Printf("[poller] login failed: %v", err)
+				if backoff == 0 {
+					backoff = backoffBase
+				} else {
+					backoff *= 2
+					if backoff > backoffMax {
+						backoff = backoffMax
+					}
+				}
+				select {
+				case <-time.After(backoff):
+					continue
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+			backoff = 0
+
+			val, err := ubusCallHostContext(ctx, st, token, "wifi", "status", nil)
+			if err != nil {
+				log.Printf("[poller] ubus call failed: %v", err)
+				continue
+			}
+			_ = val
+		}
+	}
 }

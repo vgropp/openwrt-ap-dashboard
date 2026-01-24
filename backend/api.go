@@ -102,7 +102,7 @@ func disconnectHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, "station not found", http.StatusInternalServerError)
 		return
 	}
-	client := &UbosClient{
+	client := &UbusClient{
 		Host:     st.Host,
 		Username: st.Username,
 		Password: st.Password,

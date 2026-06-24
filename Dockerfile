@@ -1,5 +1,5 @@
 # Frontend
-FROM node:24-bookworm@sha256:032e78d7e54e352129831743737e3a83171d9cc5b5896f411649c597ce0b11ea AS frontend-build
+FROM node:24-bookworm@sha256:733e1c06ada118ed9f6133a31aa1290be6929664026fb28821500437c61f2c6f AS frontend-build
 
 WORKDIR /app/frontend
 COPY frontend/package*.json ./

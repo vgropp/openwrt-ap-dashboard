@@ -9,7 +9,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Backend
-FROM golang:1.26-bookworm@sha256:349ad04971da5f200a537641ae2c70774a592ca21fad4b513b65f813f546781a AS backend-build
+FROM golang:1.26-bookworm@sha256:1ecb7edf62a0408027bd5729dfd6b1b8766e578e8df93995b225dfd0944eb651 AS backend-build
 
 WORKDIR /app
 COPY backend/ ./

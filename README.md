@@ -101,7 +101,34 @@ stations:
       - "wlan0"
       - "wlan1"
     name: "Guest Network"
+
+presence:
+  devices:
+    - name: "Alice phone"
+      mac: "00:11:22:33:44:55"
+    - name: "Bob phone"
+      mac: "aa:bb:cc:dd:ee:ff"
+
+mqtt:
+  broker: "tcp://homeassistant.local:1883"
+  username: "mqtt-user"
+  password: "your-mqtt-password"
+  client_id: "openwrt-ap-dashboard"
+  discovery_id_prefix: "openwrt_ap_dashboard"
+  topic_prefix: "openwrt/presence"
+  discovery_prefix: "homeassistant"
 ```
+
+When `presence.devices` is configured, the backend publishes retained `home` and
+`not_home` states over MQTT and registers each device through Home Assistant MQTT
+discovery. All tracked entities share one Home Assistant device named
+`OpenWrt AP Dashboard Presence`, grouped by a shared discovery identifier.
+The `mqtt.discovery_id_prefix` setting is independent from `mqtt.client_id` and
+defaults to `openwrt_ap_dashboard`. Keep it stable after setup so Home Assistant
+continues to recognize the same device and entities.
+Presence is based on association with any configured station; a
+station is only considered absent after a successful poll of all its configured
+wireless interfaces. MQTT is optional when no presence devices are configured.
 
 ### 3. Docker Setup
 
@@ -152,13 +179,20 @@ npm run dev
 
 ### stations.yaml
 
-- **poll_interval**: How often (in seconds) to query routers. Default: 10
+- **poll_interval**: How often (in seconds) to query routers. Default: 15
 - **id**: Unique identifier for this router (used internally)
 - **host**: IP or hostname of the OpenWRT device
 - **port**: ubus port (usually 80)
 - **username/password**: ubus authentication credentials (typically root)
 - **ifaces**: List of wireless interfaces to monitor (e.g., wlan0, wlan1, wlan2)
 - **name**: Display name in the dashboard
+- **presence.devices**: Devices to track, each with a Home Assistant display name and MAC address
+- **mqtt.broker**: MQTT broker URL (required when presence devices are configured)
+- **mqtt.username/password**: Optional broker credentials
+- **mqtt.client_id**: MQTT client ID. Default: `openwrt-ap-dashboard`
+- **mqtt.discovery_id_prefix**: Stable prefix for Home Assistant discovery entity and device identifiers. Default: `openwrt_ap_dashboard`
+- **mqtt.topic_prefix**: State topic prefix. Default: `openwrt/presence`
+- **mqtt.discovery_prefix**: Home Assistant discovery prefix. Default: `homeassistant`
 
 ## IP Resolution Strategy
 

@@ -23,7 +23,17 @@ func main() {
 		stationMap[st.ID] = st
 	}
 
-	startPollers(cfg)
+	stationIDs := make([]string, 0, len(cfg.Stations))
+	for _, station := range cfg.Stations {
+		stationIDs = append(stationIDs, station.ID)
+	}
+	presence, err := NewPresenceTracker(cfg.MQTT, cfg.Presence.Devices, stationIDs)
+	if err != nil {
+		log.Fatalf("configure presence: %v", err)
+	}
+	defer presence.Close()
+
+	startPollers(cfg, presence)
 
 	port := os.Getenv("BACKEND_PORT")
 	if port == "" {

@@ -70,7 +70,7 @@ var (
 	store = NewStore()
 )
 
-func startPollers(cfg *Config) {
+func startPollers(cfg *Config, presence *PresenceTracker) {
 	resolver := NewResolver(1 * time.Hour)
 
 	for _, s := range cfg.Stations {
@@ -80,7 +80,7 @@ func startPollers(cfg *Config) {
 		go func() {
 			interval := time.Duration(cfg.PollInterval) * time.Second
 			for {
-				if err := pollStation(st, resolver); err != nil {
+				if err := pollStation(st, resolver, presence); err != nil {
 					log.Printf("poll %s error: %v", st.ID, err)
 				}
 				notifyClientsUpdate()
@@ -101,7 +101,7 @@ func DeviceToString(mac string, d KnownDevice) string {
 	return fmt.Sprintf("%s [%s] %s", ip, mac, d.Name)
 }
 
-func pollStation(st StationConfig, resolver *Resolver) error {
+func pollStation(st StationConfig, resolver *Resolver, presence *PresenceTracker) error {
 	client := &UbusClient{
 		Host:     st.Host,
 		Username: st.Username,
@@ -145,16 +145,20 @@ func pollStation(st StationConfig, resolver *Resolver) error {
 			devices[mac] = d
 		}
 	}
+	currentMACs := make([]string, 0)
+	allInterfacesPolled := true
 	for _, iface := range st.Ifaces {
 		parsed, err := ubusCallHostDevices(st, token, "iwinfo", "assoclist", map[string]string{"device": iface})
 		if err != nil {
 			// retry mit neuem Login
 			token, _, err = client.ubusLogin()
 			if err != nil {
+				allInterfacesPolled = false
 				continue
 			}
 			parsed, err = ubusCallHostDevices(st, token, "iwinfo", "assoclist", map[string]string{"device": iface})
 			if err != nil {
+				allInterfacesPolled = false
 				continue
 			}
 		}
@@ -168,6 +172,7 @@ func pollStation(st StationConfig, resolver *Resolver) error {
 		}
 
 		for _, c := range resultsWrapper.Results {
+			currentMACs = append(currentMACs, c.Mac)
 			c.LastSeen = time.Now()
 			c.DeviceInfo = devices[c.Mac]
 			if c.DeviceInfo.IPAddrs == nil {
@@ -181,6 +186,11 @@ func pollStation(st StationConfig, resolver *Resolver) error {
 			c.Iface = iface
 			c.Name = st.Name
 			store.Upsert(c)
+		}
+	}
+	if allInterfacesPolled {
+		if err := presence.UpdateStation(st.ID, currentMACs); err != nil {
+			log.Printf("presence update for station %s failed: %v", st.ID, err)
 		}
 	}
 	return nil

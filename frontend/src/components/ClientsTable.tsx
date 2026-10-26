@@ -155,7 +155,20 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
                     <span>📡 {c.iface}</span>
                   </div>
                 </td>
-                <td className="px-4 py-2 font-mono">{c.name}</td>
+                <td className="px-4 py-2 font-mono">
+                  {c.station_url ? (
+                    <a
+                      href={c.station_url}
+                      className="text-blue-600 hover:underline"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {c.name}
+                    </a>
+                  ) : (
+                    c.name
+                  )}
+                </td>
                 <td className="px-4 py-2 font-mono">{c.mac}</td>
                 <td className="px-4 py-2 text-sm text-gray-700 relative group">
                   <span>

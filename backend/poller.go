@@ -59,6 +59,7 @@ type Client struct {
 		Rate    int  `json:"rate"`
 	} `json:"tx"`
 	StationID  string      `json:"station_id,omitempty"`
+	StationURL string      `json:"station_url,omitempty"`
 	Iface      string      `json:"iface,omitempty"`
 	Name       string      `json:"name,omitempty"`
 	LastSeen   time.Time   `json:"last_seen"`
@@ -176,12 +177,24 @@ func pollStation(st StationConfig, resolver *Resolver) error {
 				c.DeviceInfo.IP6Addrs = []string{}
 			}
 			c.StationID = st.ID
+			c.StationURL = formatStationURL(st.Host)
 			c.Iface = iface
 			c.Name = st.Name
 			store.Upsert(c)
 		}
 	}
 	return nil
+}
+
+func formatStationURL(host string) string {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return ""
+	}
+	if strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "https://") {
+		return strings.TrimRight(host, "/") + "/"
+	}
+	return "http://" + strings.TrimLeft(host, "/") + "/"
 }
 
 func notifyClientsUpdate() {

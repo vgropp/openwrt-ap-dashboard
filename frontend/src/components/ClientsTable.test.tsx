@@ -31,6 +31,7 @@ const clients = [
     rx: { drop_misc: 0, packets: 10, bytes: 1000, ht: true, vht: false, he: false, eht: false, mhz: 20, rate: 1000 },
     tx: { failed: 0, retries: 0, packets: 10, bytes: 1000, ht: true, vht: false, he: false, eht: false, mhz: 20, rate: 1000 },
     station_id: 'sta1',
+    station_url: 'http://station1/',
     iface: 'wlan0',
     name: 'AP1',
     last_seen: nowIso,
@@ -59,6 +60,7 @@ const clients = [
     rx: { drop_misc: 0, packets: 10, bytes: 1000, ht: true, vht: false, he: false, eht: false, mhz: 20, rate: 1000 },
     tx: { failed: 0, retries: 0, packets: 10, bytes: 1000, ht: true, vht: false, he: false, eht: false, mhz: 20, rate: 1000 },
     station_id: 'sta2',
+    station_url: 'http://station2/',
     iface: 'wlan1',
     name: 'AP2',
     last_seen: oldIso,
@@ -111,6 +113,15 @@ describe('ClientsTable', () => {
     const rowsDesc = screen.getAllByRole('row');
     const apNamesDesc = rowsDesc.map(row => row.textContent).filter(Boolean);
     expect(apNamesDesc.join(' ')).toMatch(/AP1.*AP2/);
+  });
+
+  it('renders the AP name as a link when station URL is available', () => {
+    render(<ClientsTable clients={clients} onRefresh={() => {}} />);
+    const hideOld = screen.getByLabelText(/Hide > 1 hr inactive/i);
+    fireEvent.click(hideOld);
+
+    const apLink = screen.getByRole('link', { name: 'AP1' });
+    expect(apLink).toHaveAttribute('href', 'http://station1/');
   });
 
   it('shows disconnect button for each client', () => {

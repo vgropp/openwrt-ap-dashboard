@@ -52,6 +52,7 @@ export interface Client {
   rx: ClientRx;
   tx: ClientTx;
   station_id: string;
+  station_url?: string;
   iface: string;
   name: string;
   last_seen: string; // ISO date string

@@ -21,7 +21,7 @@ A unified dashboard to monitor and manage WiFi clients across multiple OpenWRT r
 ## Architecture
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif", "primaryTextColor": "#e5e7eb", "lineColor": "#64748b", "clusterBkg": "#111827", "clusterBorder": "#334155"}}}%%
+%%{init: {"look": "classic"}}%%
 flowchart LR
     subgraph Dashboard["OPENWRT AP DASHBOARD"]
         direction TB
@@ -43,18 +43,10 @@ flowchart LR
     Backend -. "optional presence" .-> MQTT
     MQTT -. "discovery · state" .-> HA
 
-    classDef service fill:#172554,stroke:#3b82f6,color:#eff6ff,stroke-width:1.5px
-    classDef network fill:#052e2b,stroke:#14b8a6,color:#ecfdf5,stroke-width:1.5px
-    classDef optional fill:#2e1065,stroke:#a78bfa,color:#f5f3ff,stroke-width:1.5px
-    class Backend,Frontend,Browser service
-    class Routers1 network
-    class Routers2,Routers3 optional
-    class MQTT,HA optional
-    style Dashboard fill:#0f172a,stroke:#475569,color:#cbd5e1,stroke-width:1.5px
-    linkStyle 0 stroke:#14b8a6,stroke-width:2px
-    linkStyle 1,2 stroke:#a78bfa,stroke-width:2px,stroke-dasharray:5 5
-    linkStyle 3 stroke:#60a5fa,stroke-width:2px
-    linkStyle 4,5 stroke:#a78bfa,stroke-width:2px,stroke-dasharray:5 5
+    linkStyle 0 stroke:#0f766e,stroke-width:2px
+    linkStyle 1,2 stroke:#7c3aed,stroke-width:2px,stroke-dasharray:5 5
+    linkStyle 3 stroke:#2563eb,stroke-width:2px
+    linkStyle 4,5 stroke:#c2410c,stroke-width:2px,stroke-dasharray:5 5
 ```
 
 OpenWRT 1 is shown as the primary router; OpenWRT 2 and 3 are optional. The

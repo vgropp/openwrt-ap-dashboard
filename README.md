@@ -15,33 +15,51 @@ A unified dashboard to monitor and manage WiFi clients across multiple OpenWRT r
   - TX/RX rates and packet statistics
 - **Client Management**: Disconnect wireless clients remotely
 - **Device Tracking**: See which device/router each client is connected to
+- **Home Assistant Presence Detection**: Track configured MAC addresses across all access points and publish `home`/`not_home` states to Home Assistant via MQTT, with MQTT discovery and a configurable offline delay
 - **Responsive UI**: Web-based dashboard that works on desktop and mobile
 
 ## Architecture
 
+```mermaid
+%%{init: {"theme": "base", "look": "handDrawn", "themeVariables": {"fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif", "primaryTextColor": "#e5e7eb", "lineColor": "#64748b", "clusterBkg": "#111827", "clusterBorder": "#334155"}}}%%
+flowchart LR
+    subgraph Dashboard["OPENWRT AP DASHBOARD"]
+        direction TB
+        Backend("<b>Backend</b><br/>Go · ubus polling · ARP/DNS<br/>WebSocket API · optional MQTT")
+        Frontend("<b>Web UI</b><br/>React · TypeScript · Vite")
+    end
+
+    Routers1("<b>OpenWRT 1</b><br/>Required router / access point")
+    Routers2("<b>OpenWRT 2</b><br/>Optional router / access point")
+    Routers3("<b>OpenWRT 3</b><br/>Optional router / access point")
+    Browser("<b>Browser</b><br/>Live client dashboard")
+    MQTT("<b>MQTT Broker</b>")
+    HA("<b>Home Assistant</b><br/>Presence device trackers")
+
+    Backend <-->|"ubus · HTTP"| Routers1
+    Backend <-.->|"ubus · HTTP"| Routers2
+    Backend <-.->|"ubus · HTTP"| Routers3
+    Browser <-->|"HTTP · WebSocket"| Frontend
+    Backend -. "optional presence" .-> MQTT
+    MQTT -. "discovery · state" .-> HA
+
+    classDef service fill:#172554,stroke:#3b82f6,color:#eff6ff,stroke-width:1.5px
+    classDef network fill:#052e2b,stroke:#14b8a6,color:#ecfdf5,stroke-width:1.5px
+    classDef optional fill:#2e1065,stroke:#a78bfa,color:#f5f3ff,stroke-width:1.5px
+    class Backend,Frontend,Browser service
+    class Routers1 network
+    class Routers2,Routers3 optional
+    class MQTT,HA optional
+    style Dashboard fill:#0f172a,stroke:#475569,color:#cbd5e1,stroke-width:1.5px
+    linkStyle 0 stroke:#14b8a6,stroke-width:2px
+    linkStyle 1,2 stroke:#a78bfa,stroke-width:2px,stroke-dasharray:5 5
+    linkStyle 3 stroke:#60a5fa,stroke-width:2px
+    linkStyle 4,5 stroke:#a78bfa,stroke-width:2px,stroke-dasharray:5 5
 ```
-┌─────────────────────────────────────────────────────────┐
-│            OpenWRT AP Dashboard (Docker)                │
-├─────────────────────────────────────────────────────────┤
-│  Backend (Go)                                           │
-│  ├─ ubus client (HTTP RPC to routers)                   │
-│  ├─ Polling service (WiFi status, client list)          │
-│  ├─ ARP resolver (DNS + local ARP fallback)             │
-│  └─ WebSocket server (live updates to frontend)         │
-├─────────────────────────────────────────────────────────┤
-│  Frontend (React + TypeScript + Vite)                   │
-│  ├─ Real-time client table                              │
-│  ├─ Signal strength bars                                │
-│  └─ Disconnect controls                                 │
-└─────────────────────────────────────────────────────────┘
-        ↕ (HTTP, WebSocket)
-┌─────────────────────────────────────────────────────────┐
-│        OpenWRT Routers / APs (your network)             │
-│  ├─ Router 1 (via ubus: user/password)                  │
-│  ├─ Router 2 (via ubus: user/password)                  │
-│  └─ ...                                                 │
-└─────────────────────────────────────────────────────────┘
-```
+
+OpenWRT 1 is shown as the primary router; OpenWRT 2 and 3 are optional. The
+MQTT broker and Home Assistant are also optional; the dashboard works without
+presence tracking enabled.
 
 ## Requirements
 

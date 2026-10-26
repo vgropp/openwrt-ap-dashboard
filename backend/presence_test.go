@@ -6,7 +6,77 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
+
+func newTestPresenceTracker(delay time.Duration, publish func(string, []byte) error) *PresenceTracker {
+	const mac = "aa:bb:cc:dd:ee:ff"
+	return &PresenceTracker{
+		stations:      map[string]struct{}{"ap": {}},
+		stationSeen:   make(map[string]map[string]struct{}),
+		devices:       map[string]PresenceDevice{mac: {Name: "Phone", MAC: mac}},
+		states:        make(map[string]string),
+		offlineTimers: make(map[string]*time.Timer),
+		topicPrefix:   "test/presence",
+		notHomeDelay:  delay,
+		publish:       publish,
+	}
+}
+
+func TestOfflineDebouncePublishesNotHomeAfterDelay(t *testing.T) {
+	published := make(chan string, 2)
+	tracker := newTestPresenceTracker(80*time.Millisecond, func(_ string, payload []byte) error {
+		published <- string(payload)
+		return nil
+	})
+
+	if err := tracker.UpdateStation("ap", nil); err != nil {
+		t.Fatalf("UpdateStation returned error: %v", err)
+	}
+	select {
+	case state := <-published:
+		t.Fatalf("published %q before offline delay", state)
+	case <-time.After(30 * time.Millisecond):
+	}
+
+	select {
+	case state := <-published:
+		if state != "not_home" {
+			t.Fatalf("published state = %q, want not_home", state)
+		}
+	case <-time.After(300 * time.Millisecond):
+		t.Fatal("not_home was not published after offline delay")
+	}
+}
+
+func TestReconnectCancelsPendingOfflineState(t *testing.T) {
+	published := make(chan string, 2)
+	tracker := newTestPresenceTracker(80*time.Millisecond, func(_ string, payload []byte) error {
+		published <- string(payload)
+		return nil
+	})
+
+	if err := tracker.UpdateStation("ap", nil); err != nil {
+		t.Fatalf("UpdateStation while offline returned error: %v", err)
+	}
+	if err := tracker.UpdateStation("ap", []string{"AA:BB:CC:DD:EE:FF"}); err != nil {
+		t.Fatalf("UpdateStation after reconnect returned error: %v", err)
+	}
+	select {
+	case state := <-published:
+		if state != "home" {
+			t.Fatalf("published state = %q, want home", state)
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("home was not published immediately after reconnect")
+	}
+
+	select {
+	case state := <-published:
+		t.Fatalf("published stale state %q after reconnect", state)
+	case <-time.After(120 * time.Millisecond):
+	}
+}
 
 func TestDiscoveryConfigsShareOneDevice(t *testing.T) {
 	devices := []PresenceDevice{
@@ -109,6 +179,7 @@ presence:
   devices:
     - name: Phone
       mac: AA:BB:CC:DD:EE:FF
+  not_home_delay_seconds: 45
 mqtt:
   broker: tcp://localhost:1883
   discovery_id_prefix: home_network
@@ -129,6 +200,9 @@ mqtt:
 	}
 	if config.MQTT.DiscoveryIDPrefix != "home_network" {
 		t.Fatalf("MQTT discovery ID prefix = %q, want home_network", config.MQTT.DiscoveryIDPrefix)
+	}
+	if config.Presence.NotHomeDelaySeconds != 45 {
+		t.Fatalf("not_home delay = %d, want 45 seconds", config.Presence.NotHomeDelaySeconds)
 	}
 }
 

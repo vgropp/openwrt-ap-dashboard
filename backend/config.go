@@ -26,7 +26,8 @@ type Config struct {
 }
 
 type PresenceConfig struct {
-	Devices []PresenceDevice `yaml:"devices"`
+	Devices             []PresenceDevice `yaml:"devices"`
+	NotHomeDelaySeconds int              `yaml:"not_home_delay_seconds"`
 }
 
 type PresenceDevice struct {
@@ -55,6 +56,12 @@ func LoadConfig(path string) (*Config, error) {
 	}
 	if c.PollInterval == 0 {
 		c.PollInterval = 15
+	}
+	if c.Presence.NotHomeDelaySeconds < 0 {
+		return nil, fmt.Errorf("presence.not_home_delay_seconds must not be negative")
+	}
+	if c.Presence.NotHomeDelaySeconds == 0 {
+		c.Presence.NotHomeDelaySeconds = 30
 	}
 	if len(c.Presence.Devices) > 0 && strings.TrimSpace(c.MQTT.Broker) == "" {
 		return nil, fmt.Errorf("mqtt.broker is required when presence.devices are configured")

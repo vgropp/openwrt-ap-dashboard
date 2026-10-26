@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"strings"
 	"sync"
@@ -12,14 +13,17 @@ import (
 )
 
 type PresenceTracker struct {
-	mu          sync.Mutex
-	client      mqtt.Client
-	stations    map[string]struct{}
-	stationSeen map[string]map[string]struct{}
-	devices     map[string]PresenceDevice
-	states      map[string]string
-	initialized bool
-	topicPrefix string
+	mu            sync.Mutex
+	client        mqtt.Client
+	stations      map[string]struct{}
+	stationSeen   map[string]map[string]struct{}
+	devices       map[string]PresenceDevice
+	states        map[string]string
+	offlineTimers map[string]*time.Timer
+	initialized   bool
+	topicPrefix   string
+	notHomeDelay  time.Duration
+	publish       func(string, []byte) error
 }
 
 type mqttDiscoveryDevice struct {
@@ -64,7 +68,8 @@ func normalizeMAC(value string) (string, error) {
 	return strings.ToLower(hw.String()), nil
 }
 
-func NewPresenceTracker(config MQTTConfig, devices []PresenceDevice, stationIDs []string) (*PresenceTracker, error) {
+func NewPresenceTracker(config MQTTConfig, presence PresenceConfig, stationIDs []string) (*PresenceTracker, error) {
+	devices := presence.Devices
 	if len(devices) == 0 {
 		return nil, nil
 	}
@@ -111,12 +116,17 @@ func NewPresenceTracker(config MQTTConfig, devices []PresenceDevice, stationIDs 
 	}
 
 	tracker := &PresenceTracker{
-		client:      client,
-		stations:    make(map[string]struct{}, len(stationIDs)),
-		stationSeen: make(map[string]map[string]struct{}, len(stationIDs)),
-		devices:     make(map[string]PresenceDevice, len(devices)),
-		states:      make(map[string]string, len(devices)),
-		topicPrefix: config.TopicPrefix,
+		client:        client,
+		stations:      make(map[string]struct{}, len(stationIDs)),
+		stationSeen:   make(map[string]map[string]struct{}, len(stationIDs)),
+		devices:       make(map[string]PresenceDevice, len(devices)),
+		states:        make(map[string]string, len(devices)),
+		offlineTimers: make(map[string]*time.Timer, len(devices)),
+		topicPrefix:   config.TopicPrefix,
+		notHomeDelay:  time.Duration(presence.NotHomeDelaySeconds) * time.Second,
+		publish: func(topic string, payload []byte) error {
+			return publishMQTT(client, topic, payload)
+		},
 	}
 	for _, id := range stationIDs {
 		tracker.stations[id] = struct{}{}
@@ -152,6 +162,11 @@ func NewPresenceTracker(config MQTTConfig, devices []PresenceDevice, stationIDs 
 
 func (tracker *PresenceTracker) Close() {
 	if tracker != nil {
+		tracker.mu.Lock()
+		for _, timer := range tracker.offlineTimers {
+			timer.Stop()
+		}
+		tracker.mu.Unlock()
 		tracker.client.Disconnect(250)
 	}
 }
@@ -186,15 +201,56 @@ func (tracker *PresenceTracker) UpdateStation(stationID string, currentMACs []st
 
 	desired := tracker.desiredStates()
 	for mac, state := range desired {
-		if tracker.states[mac] == state {
+		if state == "home" {
+			if timer, pending := tracker.offlineTimers[mac]; pending {
+				timer.Stop()
+				delete(tracker.offlineTimers, mac)
+			}
+			if tracker.states[mac] == "home" {
+				continue
+			}
+			if err := tracker.publishState(mac, "home"); err != nil {
+				return err
+			}
 			continue
 		}
-		topic := tracker.topicPrefix + "/" + strings.ReplaceAll(mac, ":", "") + "/state"
-		if err := publishMQTT(tracker.client, topic, []byte(state)); err != nil {
-			return fmt.Errorf("publish presence state for %s: %w", mac, err)
+		if tracker.states[mac] == "not_home" {
+			continue
 		}
-		tracker.states[mac] = state
+		if _, pending := tracker.offlineTimers[mac]; pending {
+			continue
+		}
+		if tracker.notHomeDelay <= 0 {
+			if err := tracker.publishState(mac, "not_home"); err != nil {
+				return err
+			}
+			continue
+		}
+		tracker.offlineTimers[mac] = time.AfterFunc(tracker.notHomeDelay, func() {
+			tracker.publishNotHome(mac)
+		})
 	}
+	return nil
+}
+
+func (tracker *PresenceTracker) publishNotHome(mac string) {
+	tracker.mu.Lock()
+	defer tracker.mu.Unlock()
+	delete(tracker.offlineTimers, mac)
+	if !tracker.initialized || tracker.desiredStates()[mac] != "not_home" || tracker.states[mac] == "not_home" {
+		return
+	}
+	if err := tracker.publishState(mac, "not_home"); err != nil {
+		log.Printf("publish presence state for %s failed: %v", mac, err)
+	}
+}
+
+func (tracker *PresenceTracker) publishState(mac, state string) error {
+	topic := tracker.topicPrefix + "/" + strings.ReplaceAll(mac, ":", "") + "/state"
+	if err := tracker.publish(topic, []byte(state)); err != nil {
+		return fmt.Errorf("publish presence state for %s: %w", mac, err)
+	}
+	tracker.states[mac] = state
 	return nil
 }
 

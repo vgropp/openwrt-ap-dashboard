@@ -103,6 +103,7 @@ stations:
     name: "Guest Network"
 
 presence:
+  not_home_delay_seconds: 30
   devices:
     - name: "Alice phone"
       mac: "00:11:22:33:44:55"
@@ -128,7 +129,10 @@ defaults to `openwrt_ap_dashboard`. Keep it stable after setup so Home Assistant
 continues to recognize the same device and entities.
 Presence is based on association with any configured station; a
 station is only considered absent after a successful poll of all its configured
-wireless interfaces. MQTT is optional when no presence devices are configured.
+wireless interfaces. A device must remain absent for
+`presence.not_home_delay_seconds` before `not_home` is published (default: 30
+seconds); `home` is published immediately. MQTT is optional when no presence
+devices are configured.
 
 ### 3. Docker Setup
 
@@ -187,6 +191,7 @@ npm run dev
 - **ifaces**: List of wireless interfaces to monitor (e.g., wlan0, wlan1, wlan2)
 - **name**: Display name in the dashboard
 - **presence.devices**: Devices to track, each with a Home Assistant display name and MAC address
+- **presence.not_home_delay_seconds**: How many seconds a device must remain absent before publishing `not_home`. Default: 30
 - **mqtt.broker**: MQTT broker URL (required when presence devices are configured)
 - **mqtt.username/password**: Optional broker credentials
 - **mqtt.client_id**: MQTT client ID. Default: `openwrt-ap-dashboard`

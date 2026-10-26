@@ -27,7 +27,7 @@ func main() {
 	for _, station := range cfg.Stations {
 		stationIDs = append(stationIDs, station.ID)
 	}
-	presence, err := NewPresenceTracker(cfg.MQTT, cfg.Presence.Devices, stationIDs)
+	presence, err := NewPresenceTracker(cfg.MQTT, cfg.Presence, stationIDs)
 	if err != nil {
 		log.Fatalf("configure presence: %v", err)
 	}

@@ -21,7 +21,7 @@ A unified dashboard to monitor and manage WiFi clients across multiple OpenWRT r
 ## Architecture
 
 ```mermaid
-%%{init: {"theme": "base", "look": "handDrawn", "themeVariables": {"fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif", "primaryTextColor": "#e5e7eb", "lineColor": "#64748b", "clusterBkg": "#111827", "clusterBorder": "#334155"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif", "primaryTextColor": "#e5e7eb", "lineColor": "#64748b", "clusterBkg": "#111827", "clusterBorder": "#334155"}}}%%
 flowchart LR
     subgraph Dashboard["OPENWRT AP DASHBOARD"]
         direction TB

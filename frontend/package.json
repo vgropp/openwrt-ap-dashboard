@@ -32,7 +32,7 @@
     "postcss": "8.5.31",
     "@tailwindcss/postcss": "4.3.3",
     "tailwindcss": "4.3.3",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "typescript-eslint": "8.72.1",
     "vite": "8.3.5",
     "vitest": "4.1.12"

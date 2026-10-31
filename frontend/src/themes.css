@@ -1,0 +1,117 @@
+/* Oldschool is the plain Tailwind look. Classic and Modern override it through the
+   ap-* hooks; rules outside a layer win over the Tailwind utilities. */
+html[data-theme="classic"] {
+  color-scheme: dark;
+  --bg: #0a0d10;
+  --surface: #11161b;
+  --surface-2: #1a2027;
+  --line: #2a313b;
+  --ink: #e4e8ee;
+  --ink-2: #a3adba;
+  --accent: #4fb3bf;
+  --on-accent: #06181b;
+  --crit: #f0705f;
+  --mono: ui-monospace, "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, monospace;
+  --radius: 0;
+  --cell-y: 3px;
+  --shadow: none;
+}
+
+html[data-theme="classic"][data-mode="light"] {
+  color-scheme: light;
+  --bg: #f7f7f4;
+  --surface: #ffffff;
+  --surface-2: #edede8;
+  --line: #c9ccc8;
+  --ink: #161b22;
+  --ink-2: #4d5866;
+  --accent: #0b7285;
+  --on-accent: #ffffff;
+  --crit: #c23a2b;
+}
+
+html[data-theme="modern"] {
+  color-scheme: dark;
+  --bg: #171b21;
+  --surface: #20262e;
+  --surface-2: #2b323c;
+  --line: #38414d;
+  --ink: #e9edf2;
+  --ink-2: #b4bdc9;
+  --accent: #8fc7ec;
+  --on-accent: #10202c;
+  --crit: #f39a94;
+  --mono: ui-monospace, "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, monospace;
+  --radius: 12px;
+  --cell-y: 10px;
+  --shadow: 0 2px 10px rgb(0 0 0 / .28);
+}
+
+html[data-theme="modern"][data-mode="light"] {
+  color-scheme: light;
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --surface-2: #e6ebf0;
+  --line: #d3dae2;
+  --ink: #1b2129;
+  --ink-2: #47525f;
+  --accent: #2f6f9f;
+  --on-accent: #ffffff;
+  --crit: #bb3a30;
+  --shadow: 0 2px 8px rgb(50 65 85 / .1);
+}
+
+html:not([data-theme="oldschool"]):is([data-theme]) body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+html:not([data-theme="oldschool"]) .ap-muted { color: var(--ink-2); }
+html:not([data-theme="oldschool"]) .ap-link { color: var(--accent); }
+html:not([data-theme="oldschool"]) .ap-cell { color: var(--ink); }
+
+html:not([data-theme="oldschool"]) .ap-input {
+  background: var(--surface);
+  border-color: var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+}
+
+html:not([data-theme="oldschool"]) .ap-clear { color: var(--ink-2); }
+html:not([data-theme="oldschool"]) .ap-clear:hover { color: var(--ink); background: var(--surface-2); }
+
+html:not([data-theme="oldschool"]) .ap-table {
+  background: var(--surface);
+  border-color: var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+html:not([data-theme="oldschool"]) .ap-table thead { background: var(--surface-2); color: var(--ink-2); }
+html:not([data-theme="oldschool"]) .ap-table tbody { border-color: var(--line); }
+html:not([data-theme="oldschool"]) .ap-table tbody > * + * { border-color: var(--line); }
+html:not([data-theme="oldschool"]) .ap-table tbody tr:hover { background: var(--surface-2); }
+html:not([data-theme="oldschool"]) .ap-table th,
+html:not([data-theme="oldschool"]) .ap-table td {
+  padding-top: var(--cell-y);
+  padding-bottom: var(--cell-y);
+}
+
+html:not([data-theme="oldschool"]) .ap-danger {
+  border-color: var(--crit);
+  border-radius: var(--radius);
+  color: var(--crit);
+}
+html:not([data-theme="oldschool"]) .ap-danger:hover { background: var(--surface-2); color: var(--crit); }
+
+html:not([data-theme="oldschool"]) .ap-bar-on { background: var(--accent); }
+html:not([data-theme="oldschool"]) .ap-bar-off { background: var(--line); }
+html:not([data-theme="oldschool"]) .ap-sort { color: var(--accent); }
+html:not([data-theme="oldschool"]) .ap-overlay { background: color-mix(in srgb, var(--bg) 70%, transparent); }
+
+html[data-theme="classic"] body { font-size: 13px; }
+html[data-theme="classic"] .ap-table th { letter-spacing: .05em; font-size: 11px; }
+html[data-theme="classic"] .ap-table th,
+html[data-theme="classic"] .ap-input,
+html[data-theme="classic"] .ap-danger { font-family: var(--mono); }
+html[data-theme="modern"] .ap-table thead { text-transform: none; }

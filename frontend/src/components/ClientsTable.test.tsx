@@ -77,6 +77,19 @@ describe('ClientsTable', () => {
     expect(screen.getByText('AP2')).toBeInTheDocument();
   });
 
+  it('clears the filter with the X button', () => {
+    render(<ClientsTable clients={clients} onRefresh={() => {}} />);
+    expect(screen.queryByLabelText('Clear filter')).toBeNull();
+
+    const input = screen.getByPlaceholderText('Filter clients...') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'AP1' } });
+    expect(input.value).toBe('AP1');
+
+    fireEvent.click(screen.getByLabelText('Clear filter'));
+    expect(input.value).toBe('');
+    expect(screen.queryByLabelText('Clear filter')).toBeNull();
+  });
+
   it('hides old clients when "Hide > 1 hr inactive" is checked', () => {
     render(<ClientsTable clients={clients} onRefresh={() => {}} />);
     // By default, old clients are hidden

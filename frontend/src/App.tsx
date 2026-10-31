@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchClients } from "./api";
 import type { Client } from "./types";
 import ClientsTable from "./components/ClientsTable";
+import ThemeControls from "./components/ThemeControls";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -57,7 +58,7 @@ const [clients, setClients] = useState<Map<string, Client>>(new Map());
 
   return (
     <div className="container mx-auto mt-8">
-      <div className={`absolute inset-0 bg-white/70 flex items-center justify-center z-10 transition-opacity duration-200 ${loading ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+      <div className={`ap-overlay absolute inset-0 bg-white/70 flex items-center justify-center z-10 transition-opacity duration-200 ${loading ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
         <div className={`flex items-center space-x-2 animate-pulse`}>
           <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
           <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
@@ -65,6 +66,7 @@ const [clients, setClients] = useState<Map<string, Client>>(new Map());
           <span className="ml-2 font-medium text-blue-700">Loading...</span>
         </div>
       </div>
+      <ThemeControls />
       {error && <p className="text-red-500">{error}</p>}
       {!error && (
         <ClientsTable clients={Array.from(clients.values())} onRefresh={load} />

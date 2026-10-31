@@ -89,19 +89,19 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
 
   function SortIndicator({ column }: { column: SortKey }) {
     if (sortKey !== column) return null;
-    return sortOrder === "asc" ? <span className="ml-1 text-blue-500">▲</span> : <span className="ml-1 text-blue-500">▼</span>;
+    return sortOrder === "asc" ? <span className="ap-sort ml-1 text-blue-500">▲</span> : <span className="ap-sort ml-1 text-blue-500">▼</span>;
   }
   return (
     <div className="space-y-3">
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
+        <p className="ap-muted text-sm text-gray-600">
           Showing <span className="font-semibold">{filteredClients.length}</span>{" "}
           of <span className="font-semibold">{clients.length - oldCLientsCount} {oldCLientsCount > 0 && (<> ({oldCLientsCount} old)</>
     )}</span> clients
         </p>
          <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+          <label className="ap-muted flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={hideOld}
@@ -111,18 +111,30 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
             />
             Hide &gt; 1 hr inactive
           </label>        
-          <input
-            type="text"
-            placeholder="Filter clients..."
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Filter clients..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="ap-input pl-3 pr-8 py-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            {filter && (
+              <button
+                type="button"
+                aria-label="Clear filter"
+                onClick={() => setFilter("")}
+                className="ap-clear absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 bg-white shadow-md rounded-lg">
+        <table className="ap-table min-w-full border border-gray-200 bg-white shadow-md rounded-lg">
           <thead className="bg-gray-100 text-gray-700 text-sm uppercase">
             <tr>
               <th className="px-4 py-2 text-left cursor-pointer whitespace-nowrap" onClick={() => handleSort("iface")}>
@@ -159,7 +171,7 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
                   {c.station_url ? (
                     <a
                       href={c.station_url}
-                      className="text-blue-600 hover:underline"
+                      className="ap-link text-blue-600 hover:underline"
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -170,7 +182,7 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
                   )}
                 </td>
                 <td className="px-4 py-2 font-mono">{c.mac}</td>
-                <td className="px-4 py-2 text-sm text-gray-700 relative group">
+                <td className="ap-cell px-4 py-2 text-sm text-gray-700 relative group">
                   <span>
                     {c.device_info.name}
                     {(() => {
@@ -219,7 +231,7 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
                 <td className="px-4 py-2 text-right">
                   <button
                     onClick={() => handleDisconnect(c.mac)}
-                    className="px-3 py-1 text-red-600 border border-red-400 rounded-md hover:bg-red-50 hover:text-red-700 transition">
+                    className="ap-danger px-3 py-1 text-red-600 border border-red-400 rounded-md hover:bg-red-50 hover:text-red-700 transition">
                     Disconnect
                   </button>
                 </td>
@@ -246,7 +258,7 @@ function SignalBar({ signal }: { signal: number }) {
         <div
           key={bar}
           className={`w-1.5 rounded-sm ${
-            bar <= strength ? "bg-blue-600" : "bg-gray-300"
+            bar <= strength ? "ap-bar-on bg-blue-600" : "ap-bar-off bg-gray-300"
           }`}
           style={{ height: `${bar * 5}px` }}
         />

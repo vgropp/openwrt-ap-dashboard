@@ -17,6 +17,7 @@ A unified dashboard to monitor and manage WiFi clients across multiple OpenWRT r
 - **Device Tracking**: See which device/router each client is connected to
 - **Home Assistant Presence Detection**: Track configured MAC addresses across all access points and publish `home`/`not_home` states to Home Assistant via MQTT, with MQTT discovery and a configurable offline delay
 - **Responsive UI**: Web-based dashboard that works on desktop and mobile
+- **Themes**: Oldschool, Classic and Modern, the last two in light and dark
 
 ## Architecture
 

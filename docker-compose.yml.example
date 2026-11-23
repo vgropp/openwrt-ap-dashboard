@@ -4,6 +4,13 @@ services:
     container_name: openwrt-dash
     environment:
       - BACKEND_PORT=8189
+      # Optional: listen on one address only, e.g. 127.0.0.1 behind a local proxy
+      # (IPv6 without brackets, e.g. ::1)
+      # - BACKEND_HOST=127.0.0.1
+      # Optional: a second listener with only GET /api/clients (no disconnect),
+      # e.g. on Docker's bridge for other containers; port BACKEND_READONLY_PORT,
+      # default BACKEND_PORT
+      # - BACKEND_READONLY_HOST=172.17.0.1
     dns:
       - <optional-dns-for-reverse-lookup>
     ports:

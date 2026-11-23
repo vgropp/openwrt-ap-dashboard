@@ -135,6 +135,22 @@ func findStationByID(id string) *StationConfig {
 	return nil
 }
 
+// readOnlyRouter serves only the client list, for other containers or tools
+// that read it (e.g. on Docker's bridge). Disconnecting clients and the UI stay
+// on the main listener, which can sit behind a proxy with a login.
+func readOnlyRouter() *mux.Router {
+	r := mux.NewRouter()
+	r.HandleFunc("/api/clients", listClientsHandler).Methods("GET")
+	return r
+}
+
+func startReadOnlyHTTP(addr string) {
+	log.Printf("backend: read-only API listening on %s", addr)
+	if err := http.ListenAndServe(addr, readOnlyRouter()); err != nil {
+		log.Fatalf("read-only http server failed: %v", err)
+	}
+}
+
 func startHTTP(addr string) {
 	r := mux.NewRouter()
 	r.HandleFunc("/api/clients", listClientsHandler).Methods("GET")

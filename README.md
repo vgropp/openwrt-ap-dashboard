@@ -156,6 +156,10 @@ services:
     container_name: openwrt-dash
     environment:
       - BACKEND_PORT=8189
+      # Optional: listen on one address only, e.g. behind a reverse proxy on
+      # the same host (IPv6 without brackets, e.g. ::1). Empty or unset: all
+      # addresses.
+      # - BACKEND_HOST=127.0.0.1
     ports:
       - "8189:8189"
     volumes:
@@ -163,6 +167,21 @@ services:
     network_mode: host  # Required for local ARP lookup
     restart: unless-stopped
 ```
+
+With `network_mode: host` the `ports` mapping has no effect; the address the
+backend listens on is set with `BACKEND_HOST`. With `127.0.0.1` only processes
+on the host reach it, not containers.
+
+The API has no login, and `POST /api/clients/{mac}/disconnect` kicks a client
+off its AP. Keep the full listener local (or behind a proxy with a login) and,
+if other containers only need the client list, give them the read-only
+listener: `BACKEND_READONLY_HOST` (port `BACKEND_READONLY_PORT`, default
+`BACKEND_PORT`) serves `GET /api/clients` and nothing else. With the address of
+Docker's bridge (`docker0`, often `172.17.0.1`) containers reach it through
+`host.docker.internal`; other machines reach it only if that bridge is routed
+to them.
+If either address cannot be bound (for example the bridge is not up yet), the
+backend exits; `restart: unless-stopped` starts it again.
 
 ### 4. Run with Docker
 

@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
+	"net"
 	"os"
 )
 
@@ -39,5 +39,18 @@ func main() {
 	if port == "" {
 		port = "8189"
 	}
-	startHTTP(fmt.Sprintf(":%s", port))
+	// BACKEND_READONLY_HOST adds a second listener with only GET /api/clients,
+	// e.g. on Docker's bridge for other containers, while the full API stays
+	// on BACKEND_HOST. Its port is BACKEND_READONLY_PORT (default: BACKEND_PORT).
+	if roHost := os.Getenv("BACKEND_READONLY_HOST"); roHost != "" {
+		roPort := os.Getenv("BACKEND_READONLY_PORT")
+		if roPort == "" {
+			roPort = port
+		}
+		go startReadOnlyHTTP(net.JoinHostPort(roHost, roPort))
+	}
+
+	// BACKEND_HOST limits the listener to one address, e.g. 127.0.0.1 behind a
+	// local reverse proxy. Empty: all addresses.
+	startHTTP(net.JoinHostPort(os.Getenv("BACKEND_HOST"), port))
 }

@@ -19,6 +19,18 @@
         "major"
       ],
       "automerge": false
+    },
+    {
+      "description": "jest-dom declares vitest as a peer and ships type augmentations for it, so both must be updated together",
+      "matchPackageNames": [
+        "vitest",
+        "@vitest/**",
+        "@testing-library/jest-dom"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": "vitest and jest-dom"
     }
   ]
 }

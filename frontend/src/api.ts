@@ -22,7 +22,7 @@ export async function fetchClients(): Promise<Client[]> {
     data = await res.json();
   } catch (err) {
     console.error(`[api] fetchClients json parse error: ${(err as Error).message}`);
-    throw new Error(`Failed to parse JSON from /clients: ${(err as Error).message}`);
+    throw new Error(`Failed to parse JSON from /clients: ${(err as Error).message}`, { cause: err });
   }
 
   if (!Array.isArray(data)) {

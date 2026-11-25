@@ -10,6 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || !startsWith(github.head_ref, 'renovate/')
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Set up Node.js
@@ -17,22 +20,12 @@ jobs:
         with:
           node-version: '26.x'
       - name: Install dependencies
-        run: |
-          cd frontend
-          npm ci
+        run: npm ci
       - name: Type Check
-        run: |
-          cd frontend
-          npm run typecheck || npm run type-check || echo "No typecheck script"
+        run: npm run typecheck
       - name: Lint
-        run: |
-          cd frontend
-          npm run lint || echo "No lint script"
+        run: npm run lint
       - name: Build
-        run: |
-          cd frontend
-          npm run build
+        run: npm run build
       - name: Test
-        run: |
-          cd frontend
-          npm test || echo "No test script"
+        run: npm test

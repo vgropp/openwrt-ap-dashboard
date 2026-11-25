@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Client } from "../types";
 import { disconnectClient } from "../api";
 
@@ -9,10 +9,18 @@ interface Props {
 
 type SortKey = keyof Client | null;
 
-function formatLastSeen(iso: string) {
+const NOW_TICK_MS = 30_000;
+
+type SortOrder = "asc" | "desc";
+
+function SortIndicator({ order }: { order: SortOrder | null }) {
+  if (!order) return null;
+  return <span className="ap-sort ml-1 text-blue-500">{order === "asc" ? "▲" : "▼"}</span>;
+}
+
+function formatLastSeen(iso: string, now: number) {
   const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
+  const diffMs = now - d.getTime();
   const diffMinutes = Math.floor(diffMs / 60000);
   const hours = Math.floor(diffMinutes / 60);
   const minutes = diffMinutes % 60;
@@ -37,9 +45,15 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
     onRefresh();
   };
   const [hideOld, setHideOld] = useState(true);
+  // Ticking clock so "ago" and the inactive filter stay current when the data does not change.
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), NOW_TICK_MS);
+    return () => clearInterval(interval);
+  }, []);
   const [filter, setFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>(null);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   let filteredClients = clients.filter((c) => {
     const search = filter.toLowerCase();
     return (
@@ -53,7 +67,6 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
     );
   });
 
-  const now = Date.now();
   const allClientsCount = filteredClients.length;
   filteredClients = filteredClients.filter(c => {
     if (!hideOld) return true;
@@ -87,10 +100,6 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
     }
   }
 
-  function SortIndicator({ column }: { column: SortKey }) {
-    if (sortKey !== column) return null;
-    return sortOrder === "asc" ? <span className="ap-sort ml-1 text-blue-500">▲</span> : <span className="ap-sort ml-1 text-blue-500">▼</span>;
-  }
   return (
     <div className="space-y-3">
 
@@ -138,22 +147,22 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
           <thead className="bg-gray-100 text-gray-700 text-sm uppercase">
             <tr>
               <th className="px-4 py-2 text-left cursor-pointer whitespace-nowrap" onClick={() => handleSort("iface")}>
-                Network <SortIndicator column="iface" />
+                Network <SortIndicator order={sortKey === "iface" ? sortOrder : null} />
               </th>
               <th className="px-4 py-2 text-left cursor-pointer whitespace-nowrap" onClick={() => handleSort("name")}>
-                AP <SortIndicator column="name" />
+                AP <SortIndicator order={sortKey === "name" ? sortOrder : null} />
               </th>
               <th className="px-4 py-2 text-left cursor-pointer whitespace-nowrap" onClick={() => handleSort("mac")}>
-                MAC Address <SortIndicator column="mac" />
+                MAC Address <SortIndicator order={sortKey === "mac" ? sortOrder : null} />
               </th>
               <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("device_info")}>
                 Host {/* tricky: device_info is nested, see note below */}
               </th>
               <th className="px-4 py-2 text-left cursor-pointer whitespace-nowrap" onClick={() => handleSort("signal")}>
-                Signal <SortIndicator column="signal" />
+                Signal <SortIndicator order={sortKey === "signal" ? sortOrder : null} />
               </th>
               <th className="px-4 py-2 text-left cursor-pointer whitespace-nowrap" onClick={() => handleSort("thr")}>
-                Throughput <SortIndicator column="thr" />
+                Throughput <SortIndicator order={sortKey === "thr" ? sortOrder : null} />
               </th>
               <th className="px-4 py-2 text-left whitespace-nowrap">last seen</th>
               <th className="px-4 py-2"></th>
@@ -227,7 +236,7 @@ export default function ClientsTable({ clients, onRefresh }: Props) {
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-2 text-left whitespace-nowrap">{formatLastSeen(c.last_seen)}</td>
+                <td className="px-4 py-2 text-left whitespace-nowrap">{formatLastSeen(c.last_seen, now)}</td>
                 <td className="px-4 py-2 text-right">
                   <button
                     onClick={() => handleDisconnect(c.mac)}

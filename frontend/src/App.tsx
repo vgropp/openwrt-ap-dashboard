@@ -12,11 +12,10 @@ function App() {
 const [clients, setClients] = useState<Map<string, Client>>(new Map());
 
   const load = async () => {
+    const t = setTimeout(() => setLoading(true), 750);
     try {
-      setError(null);
-      const t = setTimeout(() => setLoading(true), 750);
-
       const data = await fetchClients();
+      setError(null);
       setClients((prev) => {
         const next = new Map(prev); // copy old map
 
@@ -36,7 +35,6 @@ const [clients, setClients] = useState<Map<string, Client>>(new Map());
             changed = true;
           }
         }
-        clearTimeout(t);
         return changed ? next : prev;
       });
     } catch (e: unknown) {
@@ -46,11 +44,14 @@ const [clients, setClients] = useState<Map<string, Client>>(new Map());
         setError(String(e));
       }
     } finally {
+      clearTimeout(t);
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // load() only sets state after its first await; the rule cannot see that.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
     const interval = setInterval(load, 2500); //
     return () => clearInterval(interval); // cleanup on unmount    

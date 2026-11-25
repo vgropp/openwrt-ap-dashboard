@@ -209,6 +209,17 @@ npm run dev
 # Open http://localhost:5173
 ```
 
+The dev server proxies `/api` to `http://localhost:8189`. To use a backend on
+another host, set `API_PROXY_TARGET`, either in the environment or in
+`frontend/.env.local` (ignored by git):
+
+```bash
+API_PROXY_TARGET=http://192.0.2.10:8189 npm run dev
+```
+
+Tests and checks: `npm test` (single run), `npm run test:watch`, `npm run lint`,
+`npm run typecheck`. CI runs all of them and fails on any error.
+
 ## Configuration Details
 
 ### stations.yaml
@@ -374,8 +385,9 @@ uci commit rpcd
 - Node.js
 - React, TypeScript, Vite
 - Install: `cd frontend && npm install`
-- Dev server: `npm run dev`
+- Dev server: `npm run dev` (backend target: `API_PROXY_TARGET`, default `http://localhost:8189`)
 - Build: `npm run build`
+- Test: `npm test`, lint: `npm run lint`, type check: `npm run typecheck`
 
 ## License
 
